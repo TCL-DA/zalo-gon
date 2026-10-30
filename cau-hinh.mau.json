@@ -1,0 +1,93 @@
+{
+  "_ghi_chu": "MAU cau hinh Zalo gon. Chep thanh cau-hinh.json roi sua theo may cua ban. Sua xong: dong Zalo, mo lai bang loi tat Zalo gon. Phim tat xem bang F1 trong Zalo.",
+  "duong_dan": {
+    "_ghi_chu": "Duong dan rieng tung may. De trong thi module tuong ung tat (Trello: 70-trello.js, So kho: 85-kho.js).",
+    "chrome": "",
+    "trello_mcp": "",
+    "so_kho": "",
+    "zalo_media_hdd": ""
+  },
+  "che_rieng_tu": {
+    "_ghi_chu": "Ctrl+Shift+B: lam mo anh dai dien, dong xem truoc, noi dung chat. Re chuot vao dau thi cho do ro.",
+    "do_mo_px": 7
+  },
+  "gio_lam": {
+    "_ghi_chu": "Trong gio lam: lam mo cac cuoc tro chuyen 'on ao'. Ctrl+Shift+G: tu dong -> luon bat -> tat.",
+    "tu": "08:00",
+    "den": "17:00",
+    "ngay_trong_tuan": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "lam_mo_cuoc_da_tat_thong_bao": true,
+    "ten_chua": [
+      "Nhom on ao 1",
+      "Nhom on ao 2"
+    ]
+  },
+  "quang_cao": {
+    "_ghi_chu": "An khoi quang cao co chua mot trong cac chuoi nay (vi du o zBusiness Pro dau danh sach).",
+    "chuoi": [
+      "zBusiness Pro",
+      "Nâng cấp ngay"
+    ]
+  },
+  "khach_cho": {
+    "_ghi_chu": "Chat 1-1 ma nguoi kia nhan sau cung, qua so gio nay chua tra loi -> cham do + so gio cho.",
+    "gio_toi_thieu": 2,
+    "ngay_toi_da": 3,
+    "bo_qua_ten_chua": [
+      "My Documents",
+      "Hệ thống lưu trữ"
+    ]
+  },
+  "trello": {
+    "_ghi_chu": "Ctrl+Shift+T: tao the tu tin nhan dang re chuot (hoac doan chu dang boi den). Luon chay thu truoc, bam Tao the moi ghi. Can khai duong_dan.trello_mcp (thu muc chua otl_trello.py cua rieng ban).",
+    "loai": [
+      {
+        "ten": "Viec can lam",
+        "board": "ten-board",
+        "list": "TEN LIST",
+        "nhan": [],
+        "thanh_vien": [],
+        "ghi_ten_cuoc_tro_chuyen": false,
+        "checklist": [
+          "Buoc 1",
+          "Buoc 2"
+        ]
+      }
+    ],
+    "han_mac_dinh": "ngay mai 17:00"
+  },
+  "chan_gui_nham": {
+    "_ghi_chu": "Gui vao NHOM ma tin co cac mau nay -> hoi lai, bam Enter lan nua moi gui. Regex khong phan biet hoa thuong.",
+    "chi_trong_nhom": true,
+    "mau": [
+      "báo\\s*giá",
+      "\\d[\\d.,]*\\s*(đ|đồng|vnđ|vnd|triệu|tr|k|usd)(?![a-zà-ỹ])",
+      "\\$\\s*\\d",
+      "số\\s*tài\\s*khoản|\\bstk\\b|chuyển\\s*khoản"
+    ]
+  },
+  "go_tat": {
+    "_ghi_chu": "Go /ma roi Tab (hoac chon trong bang goi y). Ma nao de trong thi chua dung duoc - dien noi dung vao.",
+    "/dc": "",
+    "/sdt": "",
+    "/email": "",
+    "/mst": "",
+    "/cty": "",
+    "/en": "",
+    "/stk": "",
+    "/bh": "",
+    "/hd": ""
+  },
+  "xuat": {
+    "_ghi_chu": "Ctrl+Shift+S: luu cuoc tro chuyen dang mo ra Markdown + HTML.",
+    "thu_muc": "",
+    "so_lan_cuon_len_toi_da": 30
+  }
+}

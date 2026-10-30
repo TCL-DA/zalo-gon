@@ -1,0 +1,14 @@
+# Cau hinh + danh sach cuoc tro chuyen THAT cua tung may (co ten nguoi, dia chi, so dien thoai)
+cau-hinh.json
+claude-doc.json
+
+# Nhat ky, cache
+*.log
+*.log.cu
+__pycache__/
+*.pyc
+
+# Loi tat goc, ban sao luu
+lnk-goc/
+*.bak
+*.bak-*
