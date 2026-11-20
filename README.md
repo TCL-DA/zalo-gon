@@ -8,6 +8,7 @@ Bộ "độ" **Zalo PC trên Windows** cho người dùng công việc: ẩn qu�
 
 | Module | Phím tắt | Làm gì |
 |---|---|---|
+| `05-ao-te.js` | `Ctrl+Shift+Y` | Áo **teenage engineering**: nền sáng #f6f8f7, nét kẻ đen, 0 bo góc, 0 đổ bóng, chữ đậm 600/700 cho dễ đọc; tin của mình = khối đen. Viết đè **640 biến thiết kế** của Zalo nên phủ cả những màn hình chưa mở. Mặc định BẬT |
 | `10-an-danh-sach.js` | | Gom/ẩn phần danh sách gây nhiễu |
 | `20-rieng-tu.js` | `Ctrl+Shift+B` | Làm mờ ảnh đại diện + nội dung chat; rê chuột vào mới rõ |
 | `30-gio-lam.js` | `Ctrl+Shift+G` | Trong giờ làm thì làm mờ các cuộc "ồn ào" |
@@ -47,6 +48,33 @@ Sửa `cau-hinh.json` theo máy mình (giờ làm, gõ tắt, thư mục xuất 
 
 Muốn mở im lặng (không nháy cửa sổ PowerShell): trỏ lối tắt Zalo vào `zalo-gon.vbs`. Giữ lại lối tắt gốc để còn đường mở Zalo bình thường.
 
+### Áo giao diện hoạt động thế nào
+
+Zalo PC dựng gần như toàn bộ giao diện bằng **biến CSS** (`--text-primary`, `--layer-background`, `--cta-link`…, khoảng 640 biến, khai ở `:root .default` / `:root .dark`). Giao diện tối chỉ là 211 luật phủ lên class `dark` ở `<body>`.
+
+Áo làm 3 lớp: (1) gỡ class `dark` → có ngay bản sáng sẵn có của Zalo; (2) viết đè bộ biến thiết kế → phủ luôn cả những màn hình chưa mở bao giờ; (3) vài chục luật viết tay cho chỗ Zalo cắm thẳng mã màu, cộng luật hình khối (0 bo góc, 0 đổ bóng) và nét riêng của TE. Không sửa file nào của Zalo — gỡ thuộc tính `data-otl-skin` trên `<html>` là về y như cũ.
+
+### Mở kiểu gì cũng có phần độ
+
+Mặc định phần độ chỉ có khi mở Zalo bằng `zalo-gon.ps1` / `zalo-gon.vbs`. Bấm biểu tượng Zalo gốc, thanh tác vụ hay để Zalo tự chạy cùng máy thì **không có**. Muốn lúc nào cũng có:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\cai-tu-dong.ps1
+# gỡ: ... -File .\cai-tu-dong.ps1 -Go
+```
+
+Lệnh này đặt một lối tắt vào thư mục **Startup**, chạy `zalo-canh.vbs` → `zalo-gon.exe` (hoặc `zalo-canh.ps1` nếu chưa build exe). Cứ ~8 giây nó xem Zalo đang chạy mà thiếu phần độ thì chèn lại; Zalo mở không kèm cổng gỡ lỗi thì nó mở lại Zalo kèm cổng (mất vài giây). Đang gọi (`ZaloCall.exe` có cửa sổ) thì nó để yên. Nhật ký: `zalo-canh.log`.
+
+### `zalo-gon.exe` (Rust) — người canh + cầu nối trong một tiến trình
+
+Từ 20/11/2026 `rust\` thay hai tiến trình chạy mãi (`zalo-canh.ps1` ~110 MB + `bridge.py` ~30 MB) bằng một file ~570 KB, chạy ~8 MB RAM:
+
+- Giữ một kết nối CDP thường trực; **rớt kết nối mà Zalo vẫn chạy thì tự nối lại** (bản Python cũ coi rớt = Zalo tắt rồi thoát hẳn → các nút gọi máy im lặng tới khi mở lại Zalo).
+- Kiểm phần độ qua chính kết nối đó, chỉ gọi `zalo-gon.ps1` khi thật sự mất (không đẻ PowerShell mỗi 8 giây).
+- Làm thẳng: danh sách cho AI đọc (🤖), lưu cuộc trò chuyện, mở link Trello. Trello / sổ kho vẫn là Python của từng nơi: exe bật `bridge.py --tho` khi có lệnh, tắt sau 10 phút không dùng.
+
+Build: `powershell -File rust\build.ps1` (cần Rust; ghi chú bẫy đường dẫn có dấu cách nằm trong file). Chưa có exe thì mọi thứ chạy kiểu cũ bằng `zalo-canh.ps1` + `bridge.py`.
+
 ## Cấu hình
 
 Mọi thứ nằm trong `cau-hinh.json` (xem `cau-hinh.mau.json` để biết từng khoá):
@@ -62,9 +90,9 @@ Hai module Trello và Sổ kho gọi script riêng của từng nơi làm (khôn
 ```
 lối tắt → zalo-gon.ps1 ──► mở Zalo.exe --remote-debugging-port=9333 (chỉ 127.0.0.1)
                        ├─► CDP Runtime.evaluate: chèn cau-hinh.json + modules\*.js vào trang
-                       └─► bật bridge.py (Runtime.addBinding '__otlGonBridgeSend')
+                       └─► bật zalo-gon.exe (Runtime.addBinding '__otlGonBridgeSend')
 
-trang Zalo ──binding──► bridge.py ──► ghi file / gọi script nội bộ ──► trả kết quả về trang
+trang Zalo ──binding──► zalo-gon.exe ──► ghi file / (bridge.py --tho: script nội bộ) ──► trả kết quả về trang
 Claude Code ──MCP────► mcp_zalo.py ──CDP──► trang Zalo (chỉ cuộc có trong claude-doc.json)
 ```
 
@@ -88,3 +116,42 @@ Chú thích trong code viết tiếng Việt không dấu, không phụ thuộc 
 ## Giấy phép
 
 MIT — xem [LICENSE](LICENSE).
+
+### Áo bị mất vía ở đâu — và cách vá cả loại
+
+Ba lỗi cùng một gốc: **ao TE tắt đổ bóng, mà Zalo lại dùng đổ bóng làm việc chính**.
+
+1. **Lớp nổi mất viền.** 185 luật của Zalo tách menu, popover, hộp thoại, nút trôi khỏi nền
+   *chỉ bằng* `box-shadow`. Tắt bóng xong, nút cuộn-xuống thành ô **trắng trên nền trắng**.
+   Vá cả loại: luật nào có `box-shadow` thì thêm `outline:1px` (outline không đẩy lại bố cục
+   như `border`). 182 luật được trả lại nét.
+2. **Chữ trắng trên nền sáng.** Toast báo tin mới của Zalo là chữ trắng trên nền tối; áo đổi nền
+   thành sáng nhưng chữ vẫn trắng → tin hiện ra **vô hình (1,07:1)**. Vá từng chỗ thì không bao
+   giờ hết vì còn hàng chục màn hình chưa mở. Nên có **người canh tương phản**: so màu chữ thật
+   với nền thật, dưới 2,6:1 thì đổi sang mực hoặc giấy. Chạy lúc máy rảnh, rút hết hàng chứ
+   không cắt ngang.
+3. **Chọn nhầm tên.** `#chatInfo` khớp **0 luật** trong bảng CSS của Zalo — bảng thông tin bên
+   phải tên thật là `.chat-info`. Trước khi viết luật thì đếm xem tên đó có thật không.
+
+### 120 Hz
+
+Màn hình chạy **120 Hz nhưng Zalo chỉ vẽ 60 khung/giây** (đo được: khung 16,66 ms).
+Ba cờ chống "ngủ" có sẵn không gỡ được trần đó. Phải thêm `--disable-frame-rate-limit`
+**và** `--disable-gpu-vsync` lúc mở Zalo (đã thêm vào `zalo-gon.ps1`) — thiếu một trong hai
+thì vẫn đứng ở 60. **Chỉ có tác dụng sau khi mở lại Zalo.** Đánh đổi: có thể xé hình nhẹ khi
+cuộn nhanh, GPU ăn điện hơn; bỏ hai cờ cuối là về 60.
+
+### Viết CSS cho Zalo: hai thứ làm máy giật
+
+Module chuyển động đã **bỏ** (31/10, theo yêu cầu). Giữ lại bài học vì nó đúng cho mọi luật
+CSS viết đè lên Zalo. Đo bằng cách ép tính lại kiểu + dàn trang (`body.offsetHeight` +
+`getComputedStyle`), lấy trung vị 25 lần: **2,8 ms → 0,1 ms**.
+
+1. **`[class*="..."]`** — mỗi lần Zalo vẽ lại khung (liên tục), Chromium phải dò chuỗi class
+   của cả cây DOM cho từng luật kiểu đó. Chỉ dùng tên class có thật.
+2. **Luật dấu sao kèm tiền tố tổ tiên** — `html[data-otl-skin="te"] *{...}` bắt Chromium, với
+   từng phần tử trong ~2.800, leo ngược lên kiểm tra thuộc tính. Gộp các luật `*` thành **một**,
+   bỏ tiền tố, rồi bật/tắt bằng `sheet.disabled` (bảng `otl-gon-ao-te-chung-css`).
+
+⚠️ **Đừng đo bằng fps.** Có hoạt ảnh thì `requestAnimationFrame` khoá vào vsync 16,7 ms; không
+có thì chạy tự do vài ms — so hai cái đó là so nhầm. Đo thời gian tính lại kiểu mới đúng.

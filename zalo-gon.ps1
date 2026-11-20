@@ -75,6 +75,11 @@ if (-not $page) {
   try { & (Join-Path $dir 'cache-ssd.ps1') -Phase auto | Out-Null } catch { }
   # 19/10: bi cua so khac che, Chromium cho Zalo "ngu" (bo ban ve) -> bam qua lai phai ve lai tu dau, khung.
   # Giu Zalo luon ve san de chuyen cua so tuc thi (120 Hz).
+  # 31/10: DA THU VA KHONG AN - ghi lai de khoi ai thu lai.
+  # Man hinh bao 120 Hz (NVIDIA GTX 1650 Ti, Current=Max=120) nhung Zalo van ve 60 khung/giay.
+  # Da mo lai Zalo kem '--disable-frame-rate-limit' + '--disable-gpu-vsync': do lai van 57-60 fps
+  # (khung 17,4 ms). Tran 60 nam o ban Electron cua Zalo, khong go duoc tu ngoai bang co dong lenh.
+  # Da bo hai co do ra: chung khong duoc gi ma con co the xe hinh + ton dien.
   $smooth = '--disable-features=CalculateNativeWinOcclusion', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding'
   Start-Process $zaloExe -WorkingDirectory (Split-Path $zaloExe) -ArgumentList (@("--remote-debugging-port=$port", '--remote-debugging-address=127.0.0.1') + $smooth)
   for ($i = 0; $i -lt 60 -and -not $page; $i++) { Start-Sleep -Milliseconds 500; $page = Get-MainPage }
@@ -121,8 +126,14 @@ for ($lan = 1; $lan -le 4 -and -not $kq.ok; $lan++) {
 if (-not $kq.ok) { Write-Log "LOI: chen khong duoc sau 4 lan: $loiChen"; exit 1 }
 if ($kq.loi.Count) { Write-Log "Chen xong nhung co tinh nang loi: $($kq.loi -join ' | ')" } else { Write-Log "Da chen Zalo gon (F1 trong Zalo xem phim tat)" }
 
-# ---- Cau noi bridge.py (sua tieng Anh, Trello, luu file). Moi luc 1 ban (mutex), tu thoat khi Zalo dong.
-# Tim pythonw: ban cai cho nguoi dung, roi Program Files, roi PATH
+# ---- Cau noi. Tu 20/11/2026: zalo-gon.exe (Rust) = nguoi canh + cau noi, chay mai, tu noi lai khi rot.
+# Moi luc 1 ban (mutex) -> dang chay thi ban moi tu thoat.
+$exe = Join-Path $dir 'zalo-gon.exe'
+if (Test-Path $exe) {
+  Start-Process $exe -WorkingDirectory $dir
+  exit 0
+}
+# Du phong khi chua co exe: bridge.py. Tim pythonw: ban cai cho nguoi dung, roi Program Files, roi PATH
 $pyw = @(
   (Get-ChildItem "$env:LOCALAPPDATA\Programs\Python\Python3*\pythonw.exe" -ErrorAction SilentlyContinue |
      Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName),

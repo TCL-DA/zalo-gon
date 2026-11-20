@@ -12,3 +12,7 @@ __pycache__/
 lnk-goc/
 *.bak
 *.bak-*
+
+# Ban build Rust (build bang rust\build.ps1)
+zalo-gon.exe
+rust/target/

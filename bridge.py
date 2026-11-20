@@ -25,7 +25,7 @@ import sys
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
-import websockets
+# websockets: chi che do cau noi cu can (nap o cuoi file) - che do tho cua zalo-gon.exe khong can.
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = 9333
@@ -263,74 +263,6 @@ def handle(method, data):
     raise ValueError(f"Không có lệnh {method}")
 
 
-# ============================== Danh sach cho Claude doc ==============================
-CLAUDE_DOC = os.path.join(HERE, "claude-doc.json")
-
-
-def claude_doc_lay():
-    if not os.path.isfile(CLAUDE_DOC):
-        return dict(cho_phep=[])
-    with open(CLAUDE_DOC, encoding="utf-8-sig") as f:
-        return dict(cho_phep=[str(x) for x in json.load(f).get("cho_phep", [])])
-
-
-def claude_doc_doi(data):
-    """Bat/tat 1 ten trong danh sach cho phep (so ten bo khoang trang thua)."""
-    ten = re.sub(r"\s+", " ", str(data.get("ten", ""))).strip()
-    if not ten:
-        raise ValueError("Thiếu tên cuộc trò chuyện")
-    ds = claude_doc_lay()["cho_phep"]
-    co = [x for x in ds if re.sub(r"\s+", " ", x).strip() == ten]
-    ds = [x for x in ds if x not in co] if co else ds + [ten]
-    tmp = CLAUDE_DOC + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump({"_ghi_chu": "Cuoc tro chuyen Claude (MCP otl-zalo) duoc doc + soan nhap. Doi bang Ctrl+Shift+A trong Zalo.",
-                   "cho_phep": ds}, f, ensure_ascii=False, indent=2)
-    os.replace(tmp, CLAUDE_DOC)
-    log.info("claude_doc %s: %s", "bo" if co else "them", ten)
-    return dict(cho_phep=ds, duoc_phep=not co)
-
-
-# ============================== Dieu phoi ==============================
-def handle(method, data):
-    if method == "trang_thai":
-        st = dict(trello=False, thu_muc_xuat=load_cfg().get("xuat", {}).get("thu_muc", ""))
-        try:
-            trello()
-            st["trello"] = True
-        except Exception as e:  # noqa: BLE001 - chi bao trang thai
-            st["trello_loi"] = f"{type(e).__name__}: {e}"
-        return st
-    if method.startswith("kho_"):
-        return kho_lenh(method, data)
-    if method == "claude_doc_lay":
-        return claude_doc_lay()
-    if method == "claude_doc_doi":
-        return claude_doc_doi(data)
-    if method == "trello_chay_thu":
-        return _tao(data, ghi=False)
-    if method == "trello_tao":
-        return _tao(data, ghi=True)
-    if method == "xuat":
-        return do_xuat(data)
-    if method == "mo_chrome":
-        url = str(data.get("url", ""))
-        if not re.match(r"^https://trello\.com/", url):
-            raise ValueError("Chỉ mở link Trello")
-        subprocess.Popen([chrome(), url])
-        return dict(ok=True)
-    if method == "mo_thu_muc":
-        # Chi mo trong thu muc luu cuoc tro chuyen hoac thu muc bao cao so kho
-        folders = [os.path.normcase(os.path.abspath(load_cfg().get("xuat", {}).get("thu_muc", "") or "\0")),
-                   os.path.normcase(os.path.abspath(os.path.join(kho().SO_KHO, "BaoCao")))]
-        p = os.path.abspath(str(data.get("duong_dan", "")))
-        if not any(os.path.normcase(p).startswith(f) for f in folders) or not os.path.exists(p):
-            raise ValueError("Chỉ mở được thư mục lưu cuộc trò chuyện / báo cáo kho")
-        subprocess.Popen(["explorer", "/select,", p])
-        return dict(ok=True)
-    raise ValueError(f"Không có lệnh {method}")
-
-
 def find_page():
     with urllib.request.urlopen(f"http://127.0.0.1:{PORT}/json", timeout=3) as r:
         targets = json.load(r)
@@ -340,20 +272,44 @@ def find_page():
     return None
 
 
-async def run():
-    url = None
-    for _ in range(90):
+async def wait_page(seconds=90):
+    """Cho trang chinh Zalo hien tren cong go loi; het gio thi tra None (= Zalo da tat that)."""
+    for _ in range(seconds):
         try:
             url = find_page()
         except OSError:
             url = None
         if url:
-            break
+            return url
         await asyncio.sleep(1)
-    if not url:
-        log.error("Khong thay trang chinh Zalo tren cong %s", PORT)
-        return
+    return None
+
+
+async def run():
+    # Ket noi CDP co the rot trong khi Zalo van chay (20/11/2026: rot luc 09:01, trang van nguyen
+    # -> cau noi thoat, nut 🤖 / sua tieng Anh / Trello im lang). Nen: rot thi noi lai,
+    # chi thoat khi trang chinh bien mat khoi cong 90 s (Zalo tat that).
     pool = ThreadPoolExecutor(max_workers=4)
+    lan = 0
+    while True:
+        url = await wait_page()
+        if not url:
+            if lan == 0:
+                log.error("Khong thay trang chinh Zalo tren cong %s", PORT)
+            else:
+                log.info("Zalo da dong - cau noi thoat")
+            return
+        if lan:
+            log.info("Ket noi rot nhung Zalo van chay - noi lai")
+        lan += 1
+        try:
+            await serve(url, pool)
+        except (OSError, websockets.InvalidHandshake, websockets.ConnectionClosed) as e:
+            log.warning("Ket noi Zalo loi: %s", e)
+        await asyncio.sleep(2)
+
+
+async def serve(url, pool):
     loop = asyncio.get_running_loop()
     async with websockets.connect(url, max_size=None, ping_interval=None) as ws:
         seq = 0
@@ -387,8 +343,8 @@ async def run():
                 if msg.get("method") == "Runtime.bindingCalled" and msg["params"].get("name") == BINDING:
                     asyncio.create_task(work(msg["params"].get("payload", "")))
         except websockets.ConnectionClosed:
-            pass                                   # Zalo tat ngang -> binh thuong
-    log.info("Zalo da dong - cau noi thoat")
+            pass                                   # rot ket noi -> run() kiem Zalo con chay khong
+    log.info("Mat ket noi trang Zalo")
 
 
 def single_instance():
@@ -396,7 +352,30 @@ def single_instance():
     return ctypes.windll.kernel32.GetLastError() != 183      # ERROR_ALREADY_EXISTS
 
 
+def tho():
+    """Che do tho cho zalo-gon.exe (Rust): moi dong stdin = 1 lenh JSON {method, data},
+    tra 1 dong JSON {ok, data | loi} ra stdout. Chi phuc vu lenh can Python (Trello, so kho)."""
+    out = sys.stdout
+    sys.stdout = sys.stderr                        # print lac cua otl_trello / so_kho khong lam ban kenh
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            req = json.loads(line)
+            rep = dict(ok=True, data=handle(str(req.get("method")), req.get("data") or {}))
+        except Exception as e:  # noqa: BLE001 - moi loi deu tra ve trang
+            log.exception("lenh tho loi")
+            rep = dict(ok=False, loi=str(e) or type(e).__name__)
+        out.write(json.dumps(rep, ensure_ascii=True) + "\n")
+        out.flush()
+
+
 if __name__ == "__main__":
+    if "--tho" in sys.argv:
+        tho()
+        sys.exit(0)
+    import websockets  # noqa: E402 - gan vao bien toan cuc cua module
     if not single_instance():
         sys.exit(0)
     try:
