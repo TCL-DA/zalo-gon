@@ -7,7 +7,9 @@
 
   G.css('otl-gon-cho-css',
     '.otl-cho{display:inline-block;margin-right:6px;padding:0 6px;border-radius:9px;font-size:11px;line-height:16px;' +
-      'background:var(--otl-red);color:#fff;font-weight:600;white-space:nowrap}' +
+      // Do mac dinh cua bo bien cho chu trang tren no chi dat 3,9:1 - duoi muc doc thoai mai.
+      // Dat thang mot sac do dam hon: trang tren #c2110c la ~5,9:1.
+      'background:#c2110c;color:#fff;font-weight:600;white-space:nowrap}' +
     '.otl-cho[data-muc="1"]{background:var(--otl-amber);color:#1b1b1b}');
 
   // "Vai giay" / "N phut" / "N gio" / "N ngay" / "Hom qua" / "dd/mm" -> so gio da troi qua

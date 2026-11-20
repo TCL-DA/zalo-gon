@@ -35,6 +35,10 @@
         '<circle cx="9.5" cy="13" r="1" fill="currentColor"/><circle cx="14.5" cy="13" r="1" fill="currentColor"/><path d="M9.5 16.2h5"/>'),
       on: function () { return !!(G.claudeDoc && G.claudeDoc.isAllowed(G.currentChat().name)); },
       run: function () { G.runHotkey('Ctrl+Shift+KeyA'); } },
+    { id: 'ao-te', title: 'Áo teenage engineering — nền sáng, nét kẻ đen, chữ đậm (Ctrl+Shift+Y)',
+      icon: svg('<rect x="3.5" y="3.5" width="17" height="17"/><path d="M3.5 12h17"/><path d="M12 3.5v17"/>'),
+      on: function () { return !!(G.aoTe && G.aoTe.dangBat()); },
+      run: function () { G.runHotkey('Ctrl+Shift+KeyY'); } },
     { id: 'tro-giup', title: 'Zalo gọn — tất cả phím tắt (F1)',
       icon: svg('<circle cx="12" cy="12" r="9"/><path d="M9.6 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.4"/><circle cx="12" cy="16.8" r=".6" fill="currentColor"/>'),
       run: function () { G.runHotkey('F1'); } }
@@ -43,7 +47,9 @@
   G.css('otl-gon-thanh-nut-css',
     'li[data-otl-nut-sep]{width:1px;height:20px;background:var(--otl-line);margin:0 6px;align-self:center;list-style:none}' +
     'li[data-otl-nut] .z--btn--v2{display:flex;align-items:center;justify-content:center}' +
-    'li[data-otl-nut][data-on] .z--btn--v2{color:var(--otl-blue)}');
+    // Dang BAT = o mau dac + chu trang (truoc chi doi chu sang xanh, nhin khong ra bat hay tat)
+    'li[data-otl-nut] .z--btn--v2{transition:background-color .08s linear,color .08s linear}' +
+    'li[data-otl-nut][data-on] .z--btn--v2{background:var(--otl-blue);color:#fff}');
 
   function build(ul) {
     var sep = G.el('li', { 'data-otl-nut-sep': '' });

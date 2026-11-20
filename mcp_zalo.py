@@ -14,13 +14,16 @@ import re
 import urllib.request
 
 import websockets
-from mcp.server.fastmcp import FastMCP
+try:                                        # mcp >= 2.0: FastMCP doi ten thanh MCPServer
+    from mcp.server.mcpserver import MCPServer as _Server
+except ImportError:                         # mcp 1.x (ten cu)
+    from mcp.server.fastmcp import FastMCP as _Server
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = 9333
 ALLOW_FILE = os.path.join(HERE, "claude-doc.json")
 
-mcp = FastMCP("otl-zalo", instructions=(
+mcp = _Server("otl-zalo", instructions=(
     "Đọc tin Zalo của chủ máy và soạn NHÁP câu trả lời vào ô nhập — không có lệnh gửi, chủ máy tự bấm Enter. "
     "Chỉ cuộc trò chuyện có dấu 🤖 (danh sách cho phép) mới đọc được; cuộc khác bị từ chối, đừng tìm cách vòng. "
     "Đọc tin = mở cuộc đó trong Zalo nên người kia thấy 'đã xem'. Trả lời khách nước ngoài theo skill sale-otl; "
