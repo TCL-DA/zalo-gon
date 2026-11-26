@@ -173,6 +173,15 @@
     msgScroll: '#messageViewScroll'
   };
   G.txt = function (el) { return el ? el.textContent.replace(/\s+/g, ' ').trim() : ''; };
+  // 23/11/2026 (Zalo 26.11.12): #messageViewScroll khong con cuon (overflow visible) — khung cuon that la lop cha
+  // (.transform-gpu, overflow-y scroll). Leo len vai lop tim phan tu overflow auto/scroll; khong thay thi tra lai cai cu.
+  G.msgScroller = function () {
+    var b = document.querySelector(G.SEL.msgScroll), e = b;
+    for (var i = 0; e && i < 4; i++, e = e.parentElement) {
+      if (/(auto|scroll)/.test(getComputedStyle(e).overflowY)) return e;
+    }
+    return b;
+  };
   G.item = function (it) {
     var name = G.txt(it.querySelector('.conv-item-title__name'));
     var senderEl = it.querySelector('.z-conv-message__preview-sender-name');
@@ -220,11 +229,13 @@
       else {
         // Loai tin khac: bo phan cam xuc + gio gui de khong lan chu thua
         var c2 = b.cloneNode(true);
-        c2.querySelectorAll('.message-reaction-container, .card-send-time').forEach(function (e) { e.remove(); });
+        c2.querySelectorAll('.message-reaction-container, .card-send-time, .message-sender-name-wrapper').forEach(function (e) { e.remove(); });
         text = '[' + (G.txt(c2).slice(0, 80) || 'Tin không phải chữ') + ']';
       }
     }
-    var senderEl = b.querySelector('[class*="sender-name"], [class*="message-sender"], [class*="chat-message__name"]');
+    // 23/11/2026: khung ten co chu 'a' an (.opacity-0) dung truoc ten -> uu tien o noi dung ten
+    var senderEl = b.querySelector('.message-sender-name-content') ||
+      b.querySelector('[class*="sender-name"], [class*="message-sender"], [class*="chat-message__name"]');
     return { ms: +m[1], ai: me ? 'Bạn' : (senderEl ? G.txt(senderEl) : ''), noi_dung: text };
   };
   G.currentChat = function () {

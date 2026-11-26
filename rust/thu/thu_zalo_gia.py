@@ -141,7 +141,7 @@ async def main():
             await asyncio.sleep(25)
             log = open(os.path.join(DIR, "bridge.log"), encoding="utf-8").read()
             ok("15. Zalo TẮT HẲN 25 s -> khong goi ps1, khong tu mo lai Zalo",
-               dem_dong("ps1-da-goi.txt") == n0 and "Zalo da dong" in log)
+               dem_dong("ps1-da-goi.txt") == n0 and "da dong - cho mo lai" in log)
 
             # ---- Mo Zalo kieu thuong (bieu tuong goc, khong cong) -> mo lai kem cong
             zalo = bat_zalo()

@@ -39,6 +39,10 @@
       icon: svg('<rect x="3.5" y="3.5" width="17" height="17"/><path d="M3.5 12h17"/><path d="M12 3.5v17"/>'),
       on: function () { return !!(G.aoTe && G.aoTe.dangBat()); },
       run: function () { G.runHotkey('Ctrl+Shift+KeyY'); } },
+    { id: 'ao-carbon', title: 'Áo sợi carbon — nền vân carbon, kính tối (Ctrl+Shift+U)',
+      icon: svg('<path d="M4 20 20 4"/><path d="M4 13 13 4"/><path d="M11 20 20 11"/><rect x="3.5" y="3.5" width="17" height="17"/>'),
+      on: function () { return !!(G.aoCarbon && G.aoCarbon.dangBat()); },
+      run: function () { G.runHotkey('Ctrl+Shift+KeyU'); } },
     { id: 'tro-giup', title: 'Zalo gọn — tất cả phím tắt (F1)',
       icon: svg('<circle cx="12" cy="12" r="9"/><path d="M9.6 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.4"/><circle cx="12" cy="16.8" r=".6" fill="currentColor"/>'),
       run: function () { G.runHotkey('F1'); } }

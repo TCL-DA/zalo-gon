@@ -64,8 +64,31 @@ function Get-MainPage {
   $t | Where-Object { $_.type -eq 'page' -and $_.url -match 'pc-dist/index\.html' } | Select-Object -First 1
 }
 
+# 26/11/2026: tu Zalo 26.11.20, bootstrap trong app.asar co DISALLOWED_DEBUG_SWITCHES: gap
+# --remote-debugging-port / pipe / inspect... la THOAT (exit 0), chi mo bang token ky cua Zalo. Ban cu thi
+# may chu bao "Yeu cau cap nhat ung dung". Truoc khi sua: nguoi canh dong Zalo -> mo kem cong -> Zalo thoat
+# -> lap lai moi lan nguoi dung mo Zalo. Ban chan cong thi KHONG dong Zalo, KHONG mo kem co.
+# Ket qua do theo phien ban luu o chan-go-loi.txt (doc asar ~160 MB chi 1 lan moi phien ban).
+function Test-ChanGoLoi($exe) {
+  $ver = (Split-Path (Split-Path $exe) -Leaf) -replace '^Zalo-', ''
+  $cache = Join-Path $dir 'chan-go-loi.txt'
+  $dong = if (Test-Path $cache) { Get-Content $cache | Where-Object { $_ -like "$ver=*" } | Select-Object -First 1 }
+  if ($dong) { return ($dong -eq "$ver=1") }
+  $asar = Join-Path (Split-Path $exe) 'resources\app.asar'
+  $chan = $false
+  try { $chan = [IO.File]::ReadAllText($asar, [Text.Encoding]::GetEncoding(28591)).Contains('DISALLOWED_DEBUG_SWITCHES') } catch { }
+  Add-Content $cache "$ver=$([int]$chan)" -Encoding ASCII
+  if ($chan) { Write-Log "Zalo $ver CHAN cong go loi (anti-debug cua Zalo) - Zalo gon khong chen duoc, se khong dong/mo lai Zalo" }
+  $chan
+}
+
 # ---- Mo Zalo kem cong neu can
 $page = Get-MainPage
+if (-not $page -and (Test-ChanGoLoi $zaloExe)) {
+  # Zalo chua mo (vd bam loi tat Zalo gon) -> mo kieu thuong de nguoi dung van co Zalo
+  if (-not (Get-Process Zalo -ErrorAction SilentlyContinue)) { Start-Process $zaloExe -WorkingDirectory (Split-Path $zaloExe) }
+  exit 2   # ma loi -> zalo-gon.exe gian nhip kiem toi 5 phut, khong goi lai lien tuc
+}
 if (-not $page) {
   if (Get-Process Zalo -ErrorAction SilentlyContinue) {
     Get-Process Zalo | Stop-Process -Force   # dang mo kieu thuong -> mo lai kem cong
@@ -83,7 +106,11 @@ if (-not $page) {
   $smooth = '--disable-features=CalculateNativeWinOcclusion', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding'
   Start-Process $zaloExe -WorkingDirectory (Split-Path $zaloExe) -ArgumentList (@("--remote-debugging-port=$port", '--remote-debugging-address=127.0.0.1') + $smooth)
   for ($i = 0; $i -lt 60 -and -not $page; $i++) { Start-Sleep -Milliseconds 500; $page = Get-MainPage }
-  if (-not $page) { throw "Khong ket noi duoc cong $port cua Zalo" }
+  if (-not $page) {
+    # Luoi an toan: Zalo tu thoat khi gap co (kieu chan moi chua biet) -> mo lai kieu thuong, khong de mat Zalo
+    if (-not (Get-Process Zalo -ErrorAction SilentlyContinue)) { Start-Process $zaloExe -WorkingDirectory (Split-Path $zaloExe) }
+    throw "Khong ket noi duoc cong $port cua Zalo (da mo lai Zalo kieu thuong)"
+  }
 }
 # Cho giao dien dung xong (co #conversationListId) - toi da ~40 s
 for ($i = 0; $i -lt 40; $i++) {

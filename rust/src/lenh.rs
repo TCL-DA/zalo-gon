@@ -16,7 +16,8 @@ use std::time::{Duration, Instant};
 
 pub const KHONG_CUA_SO: u32 = 0x0800_0000; // CREATE_NO_WINDOW
 const CHROME_MAC_DINH: &str = r"C:\Program Files\Google\Chrome\Application\chrome.exe";
-const GHI_CHU_CLAUDE: &str = "Cuoc tro chuyen Claude (MCP otl-zalo) duoc doc + soan nhap. Doi bang Ctrl+Shift+A trong Zalo.";
+const GHI_CHU_CLAUDE: &str =
+    "Cuoc tro chuyen Claude (MCP otl-zalo / otl-whatsapp) duoc doc + soan nhap. Doi bang nut 🤖 / Ctrl+Shift+A trong app.";
 /// Python nhan roi qua lau thi tat cho nhe may (lan bam sau tu bat lai, mat ~1 s).
 pub const THO_NGHI: Duration = Duration::from_secs(600);
 

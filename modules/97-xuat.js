@@ -10,7 +10,7 @@
     });
   }
   function scrollUp(times, onStep) {
-    var box = document.querySelector(G.SEL.msgScroll);
+    var box = G.msgScroller();
     return new Promise(function (resolve) {
       var n = 0, lastH = -1;
       (function tick() {
@@ -40,7 +40,7 @@
         { text: 'Huỷ (Esc)', onClick: function (c) { c(); } },
         { text: 'Lưu', chinh: true, onClick: function (c, btn) {
           btn.disabled = true;
-          var rows = {}, box = document.querySelector(G.SEL.msgScroll), keep = box ? box.scrollTop : 0;
+          var rows = {}, box = G.msgScroller(), keep = box ? box.scrollTop : 0;
           var times = chk.checked ? (cfg.so_lan_cuon_len_toi_da || 30) : 0;
           scrollUp(times, function (n) { collect(rows); status.textContent = 'Đang gom tin… ' + Object.keys(rows).length + ' tin' + (times ? ' (lần cuộn ' + n + ')' : ''); })
             .then(function () {

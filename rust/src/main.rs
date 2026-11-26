@@ -2,13 +2,17 @@
 //!
 //! - Giu 1 ket noi CDP toi trang chinh Zalo (127.0.0.1:9333), dang ky binding '__otlGonBridgeSend'.
 //!   Trang goi binding -> lenh.rs xu ly -> tra bang window.__otlGonBridgeReply(...).
+//! - Tu 20/11/2026 dung chung cho WhatsApp: chep exe sang thu muc khac kem ung-dung.json (cau_hinh.rs).
 //! - Ket noi rot ma Zalo van chay -> tu noi lai (loi 20/11: bridge.py coi rot = Zalo tat, thoat luon).
 //! - Moi 8 s: Zalo chay ma mat cong / mat mod -> goi zalo-gon.ps1 chen lai (hoan khi dang goi).
 //! - Moi luc 1 ban. Nhat ky: bridge.log (cau noi) + zalo-canh.log (chen lai), nhu ban cu.
 #![windows_subsystem = "windows"]
 
+mod cau_hinh;
 mod he_thong;
 mod lenh;
+
+use cau_hinh::CFG;
 
 use serde_json::{json, Value};
 use std::io::{ErrorKind, Read, Write};
@@ -23,8 +27,6 @@ use std::time::{Duration, Instant};
 use tungstenite::stream::MaybeTlsStream;
 use tungstenite::{Message, WebSocket};
 
-const PORT_MAC_DINH: u16 = 9333;
-const BINDING: &str = "__otlGonBridgeSend";
 const CHU_KY: u64 = 8; // giay giua 2 lan kiem
 
 pub static HERE: LazyLock<PathBuf> = LazyLock::new(|| {
@@ -48,31 +50,22 @@ pub fn ghi_log(muc: &str, msg: &str) {
 }
 
 fn ghi_canh(msg: &str) {
-    ghi_vao("zalo-canh.log", &format!("{}  {msg}", he_thong::Gio::bay_gio().day_du()));
+    ghi_vao(&CFG.log_canh, &format!("{}  {msg}", he_thong::Gio::bay_gio().day_du()));
 }
 
-/// GET /json cua cong go loi -> webSocketDebuggerUrl cua trang chinh (pc-dist/index.html).
-/// Cong go loi Zalo. ZALO_GON_PORT chi de chay thu voi Zalo gia (tools test), binh thuong 9333.
-static PORT: LazyLock<u16> =
-    LazyLock::new(|| std::env::var("ZALO_GON_PORT").ok().and_then(|v| v.parse().ok()).unwrap_or(PORT_MAC_DINH));
-
-/// Ten tien trinh Zalo / cua so goi. ZALO_GON_EXE, ZALO_GON_CALL_EXE chi de thu voi tien trinh gia.
-static EXE_ZALO: LazyLock<String> = LazyLock::new(|| std::env::var("ZALO_GON_EXE").unwrap_or_else(|_| "Zalo.exe".into()));
-static EXE_GOI: LazyLock<String> =
-    LazyLock::new(|| std::env::var("ZALO_GON_CALL_EXE").unwrap_or_else(|_| "ZaloCall.exe".into()));
-
+/// GET /json cua cong go loi -> webSocketDebuggerUrl cua trang chinh (url chua CFG.trang_url_chua).
 fn tim_trang() -> Option<String> {
-    let addr = ("127.0.0.1", *PORT).to_socket_addrs().ok()?.next()?;
+    let addr = ("127.0.0.1", CFG.cong).to_socket_addrs().ok()?.next()?;
     let mut s = TcpStream::connect_timeout(&addr, Duration::from_secs(2)).ok()?;
     s.set_read_timeout(Some(Duration::from_secs(3))).ok()?;
-    write!(s, "GET /json HTTP/1.1\r\nHost: 127.0.0.1:{}\r\nConnection: close\r\n\r\n", *PORT).ok()?;
+    write!(s, "GET /json HTTP/1.1\r\nHost: 127.0.0.1:{}\r\nConnection: close\r\n\r\n", CFG.cong).ok()?;
     let mut buf = Vec::new();
     let _ = s.read_to_end(&mut buf);
     let txt = String::from_utf8_lossy(&buf);
     let body = txt.split_once("\r\n\r\n")?.1;
     let ds: Value = serde_json::from_str(body).ok()?;
     ds.as_array()?.iter().find_map(|t| {
-        let la_chinh = t["type"] == "page" && t["url"].as_str().is_some_and(|u| u.contains("pc-dist/index.html"));
+        let la_chinh = t["type"] == "page" && t["url"].as_str().is_some_and(|u| u.contains(CFG.trang_url_chua.as_str()));
         if la_chinh { t["webSocketDebuggerUrl"].as_str().map(String::from) } else { None }
     })
 }
@@ -93,7 +86,7 @@ impl KetNoi {
         }
         let mut k = KetNoi { ws, seq: 0, id_kiem: None };
         k.gui("Runtime.enable", json!({}))?;
-        k.gui("Runtime.addBinding", json!({ "name": BINDING }))?;
+        k.gui("Runtime.addBinding", json!({ "name": CFG.binding }))?;
         Ok(k)
     }
 
@@ -115,7 +108,8 @@ fn bieu_thuc_tra_loi(rid: &Value, kq: Result<Value, String>) -> String {
         Ok(d) => json!({ "id": rid, "ok": true, "data": d }),
         Err(e) => json!({ "id": rid, "ok": false, "loi": e }),
     };
-    format!("window.__otlGonBridgeReply && window.__otlGonBridgeReply({rep})")
+    let h = &CFG.ham_tra_loi;
+    format!("window.{h} && window.{h}({rep})")
 }
 
 fn lam_lenh(payload: String, tx: Sender<String>) {
@@ -138,7 +132,7 @@ fn chen_lai(dang_chen: &Arc<AtomicBool>, hong: &Arc<AtomicU32>) {
     }
     let (dc, h) = (dang_chen.clone(), hong.clone());
     std::thread::spawn(move || {
-        let ps1 = HERE.join("zalo-gon.ps1");
+        let ps1 = HERE.join(&CFG.chen_lai);
         let ok = Command::new(r"C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe")
             .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
             .arg(&ps1)
@@ -148,7 +142,7 @@ fn chen_lai(dang_chen: &Arc<AtomicBool>, hong: &Arc<AtomicU32>) {
             .map(|s| s.success())
             .unwrap_or(false);
         if ok {
-            ghi_canh("Da chen lai Zalo gon (Zalo duoc mo khong qua loi tat)");
+            ghi_canh(&format!("Da chen lai mod ({} duoc mo khong qua loi tat / mat mod)", CFG.exe));
             h.store(0, Ordering::SeqCst);
         } else {
             let n = h.fetch_add(1, Ordering::SeqCst) + 1;
@@ -163,13 +157,12 @@ fn la_het_gio(e: &tungstenite::Error) -> bool {
 }
 
 fn main() {
-    // Cung ten mutex voi bridge.py + zalo-canh.ps1 cu -> ban cu (neu ai lo bat) tu thoat, khong dang ky trung binding.
-    // ZALO_GON_PORT (ban thu voi Zalo gia) -> doi ten mutex de chay song song ban that.
-    let duoi = if std::env::var_os("ZALO_GON_PORT").is_some() { "_thu" } else { "" };
-    if !he_thong::giu_mutex(&format!("Local\\OtlZaloGonBridge{duoi}")) || !he_thong::giu_mutex(&format!("Global\\OtlZaloCanh{duoi}")) {
+    // Zalo: cung ten mutex voi bridge.py + zalo-canh.ps1 cu -> ban cu (neu ai lo bat) tu thoat, khong dang ky
+    // trung binding. App khac dat mutex rieng trong ung-dung.json. Ban thu (ZALO_GON_PORT) them duoi "_thu".
+    if !he_thong::giu_mutex(&CFG.mutex_cau_noi) || !he_thong::giu_mutex(&CFG.mutex_canh) {
         return;
     }
-    ghi_log("INFO", "zalo-gon.exe (Rust) khoi dong");
+    ghi_log("INFO", &format!("nguoi canh + cau noi (Rust) khoi dong - {} cong {}", CFG.exe, CFG.cong));
     let (tx, rx) = mpsc::channel::<String>();
     let dang_chen = Arc::new(AtomicBool::new(false));
     let hong = Arc::new(AtomicU32::new(0));
@@ -184,24 +177,24 @@ fn main() {
         if lan_kiem.elapsed() >= Duration::from_secs(cach) {
             lan_kiem = Instant::now();
             lenh::don_tho();
-            let zalo = !he_thong::pid_theo_ten(&EXE_ZALO).is_empty();
+            let zalo = !he_thong::pid_theo_ten(&CFG.exe).is_empty();
             // Ghi theo chuyen trang thai (ket noi thuong rot TRUOC luc kiem -> dua vao kn thi khong ghi duoc gi)
             if zalo != zalo_chay {
-                ghi_log("INFO", if zalo { "Zalo mo lai" } else { "Zalo da dong - cho Zalo mo lai (khong tu mo)" });
+                ghi_log("INFO", &if zalo { format!("{} mo lai", CFG.exe) } else { format!("{} da dong - cho mo lai (khong tu mo)", CFG.exe) });
                 zalo_chay = zalo;
             }
             if !zalo {
                 vang_trang = 0;
                 kn = None;
-            } else if !he_thong::dang_goi(&EXE_GOI) && !dang_chen.load(Ordering::SeqCst) {
+            } else if !(!CFG.exe_goi.is_empty() && he_thong::dang_goi(&CFG.exe_goi)) && !dang_chen.load(Ordering::SeqCst) {
                 if kn.is_none() {
                     match tim_trang() {
                         Some(url) => match KetNoi::mo(&url) {
                             Ok(k) => {
-                                ghi_log("INFO", &format!("Da noi vao Zalo: {url}"));
+                                ghi_log("INFO", &format!("Da noi vao {}: {url}", CFG.exe));
                                 kn = Some(k);
                             }
-                            Err(e) => ghi_log("WARNING", &format!("Noi Zalo loi: {e}")),
+                            Err(e) => ghi_log("WARNING", &format!("Noi {} loi: {e}", CFG.exe)),
                         },
                         None => {
                             // Zalo chay ma khong co trang tren cong = mo kieu thuong -> mo lai kem cong.
@@ -219,10 +212,10 @@ fn main() {
                     }
                 }
                 if let Some(k) = kn.as_mut() {
-                    match k.danh_gia("!!window.__otlGonG") {
+                    match k.danh_gia(&CFG.co_mod) {
                         Ok(id) => k.id_kiem = Some(id),
                         Err(e) => {
-                            ghi_log("WARNING", &format!("Mat ket noi trang Zalo: {e}"));
+                            ghi_log("WARNING", &format!("Mat ket noi trang {}: {e}", CFG.exe));
                             kn = None;
                         }
                     }
@@ -238,7 +231,7 @@ fn main() {
         match k.ws.read() {
             Ok(Message::Text(t)) => {
                 let Ok(msg) = serde_json::from_str::<Value>(t.as_str()) else { continue };
-                if msg["method"] == "Runtime.bindingCalled" && msg["params"]["name"] == BINDING {
+                if msg["method"] == "Runtime.bindingCalled" && msg["params"]["name"] == CFG.binding.as_str() {
                     lam_lenh(msg["params"]["payload"].as_str().unwrap_or("").to_string(), tx.clone());
                 } else if msg["method"] == "Runtime.executionContextsCleared" {
                     lan_kiem = Instant::now() - Duration::from_secs(CHU_KY - 3); // trang nap lai -> kiem mod som
@@ -252,7 +245,7 @@ fn main() {
                 }
             }
             Ok(Message::Close(_)) => {
-                ghi_log("INFO", "Mat ket noi trang Zalo - se noi lai");
+                ghi_log("INFO", &format!("Mat ket noi trang {} - se noi lai", CFG.exe));
                 kn = None;
                 lan_kiem = Instant::now() - Duration::from_secs(CHU_KY - 2);
                 continue;
@@ -260,7 +253,7 @@ fn main() {
             Ok(_) => {}
             Err(e) if la_het_gio(&e) => {}
             Err(e) => {
-                ghi_log("INFO", &format!("Mat ket noi trang Zalo ({e}) - se noi lai"));
+                ghi_log("INFO", &format!("Mat ket noi trang {} ({e}) - se noi lai", CFG.exe));
                 kn = None;
                 lan_kiem = Instant::now() - Duration::from_secs(CHU_KY - 2);
                 continue;
