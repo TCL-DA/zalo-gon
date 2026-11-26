@@ -18,3 +18,9 @@ zalo-gon.exe
 rust/target/
 chan-go-loi.txt
 web/app/target/
+
+# Ban web (thanh-tcl.exe = app Rust WebView2, build rieng; WebView2Loader = redist MS)
+web/thanh-tcl.exe
+web/WebView2Loader.dll
+web/*.exe
+web/*.dll
