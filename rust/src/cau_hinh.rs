@@ -35,7 +35,11 @@ fn moi_truong(ten: &str) -> Option<String> {
 }
 
 pub static CFG: LazyLock<UngDung> = LazyLock::new(|| {
-    let v: Value = std::fs::read_to_string(HERE.join("ung-dung.json"))
+    // `--ung-dung <file>` (tuong doi thu muc exe): 1 exe canh nhieu app (vd web\ung-dung.json cho Zalo Web),
+    // van dung chung cau-hinh.json / claude-doc.json / bridge.py canh exe.
+    let args: Vec<String> = std::env::args().collect();
+    let file = args.iter().position(|a| a == "--ung-dung").and_then(|i| args.get(i + 1)).map_or("ung-dung.json", |s| s.as_str());
+    let v: Value = std::fs::read_to_string(HERE.join(file))
         .ok()
         .and_then(|s| serde_json::from_str(s.trim_start_matches('\u{feff}')).ok())
         .unwrap_or(Value::Null);

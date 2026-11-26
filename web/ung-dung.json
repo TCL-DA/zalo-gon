@@ -1,12 +1,12 @@
 {
   "cong": 9334,
   "trang_url_chua": "chat.zalo.me",
-  "binding": "__otlWebBridgeSend",
-  "ham_tra_loi": "__otlWebBridgeReply",
-  "co_mod": "document.documentElement.hasAttribute('data-otl-carbon') && !!document.getElementById('otl-carbon-web')",
-  "exe": "chrome.exe",
+  "binding": "__otlGonBridgeSend",
+  "ham_tra_loi": "__otlGonBridgeReply",
+  "co_mod": "!!window.__otlGonG && document.documentElement.hasAttribute('data-otl-carbon')",
+  "exe": "thanh-tcl.exe",
   "exe_goi": "",
-  "chen_lai": "chen-lai.ps1",
+  "chen_lai": "web\\chen-lai.ps1",
   "mutex_cau_noi": "Local\\OtlZaloWebBridge",
   "mutex_canh": "Global\\OtlZaloWebCanh",
   "log_canh": "zalo-web-canh.log"

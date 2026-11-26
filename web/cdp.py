@@ -27,13 +27,33 @@ async def call(ws, mid, method, params=None):
             return m
 
 
+GOC = os.path.dirname(BASE)  # thu muc zalo-gon (ban Zalo PC): cau-hinh.json + modules/ dung chung
+# Ao rieng cua ban PC -> bo, de ao carbon web (web/modules/05-carbon-web.js) lam chu giao dien
+BO_QUA_PC = {"05-ao-te.js", "06-ao-carbon.js"}
+
+
+def _boc(f):
+    code = open(f, encoding="utf-8").read()
+    ten = json.dumps(os.path.basename(f))
+    return ("try{\n" + code + "\n}catch(e){console.error('[otl]'," + ten + ",e);"
+            "window.__otlGonErr.push(" + ten + "+': '+e.message);}")
+
+
 def bundle():
     du = open(os.path.join(BASE, "assets", "favicon-datauri.txt")).read().strip()
-    parts = ["window.__OTL_FAVICON=" + json.dumps(du) + ";"]
+    try:
+        cfg = open(os.path.join(GOC, "cau-hinh.json"), encoding="utf-8-sig").read()
+        json.loads(cfg)
+    except (OSError, ValueError):
+        cfg = "{}"
+    parts = ["window.__OTL_FAVICON=" + json.dumps(du) + ";", "window.__otlGonErr=[];window.__otlGonCfg=" + cfg + ";"]
+    # 1) tinh nang ban PC (Zalo PC = chinh web Zalo boc Electron -> DOM giong), 2) module rieng web (ao, ten)
+    for f in sorted(glob.glob(os.path.join(GOC, "modules", "*.js"))):
+        if os.path.basename(f) not in BO_QUA_PC:
+            parts.append(_boc(f))
     for f in sorted(glob.glob(os.path.join(BASE, "modules", "*.js"))):
-        code = open(f, encoding="utf-8").read()
-        parts.append("try{\n" + code + "\n}catch(e){console.error('[otl]'," + json.dumps(os.path.basename(f)) + ",e);}")
-    return "\n".join(parts) + "\n'otl-mod-ok'"
+        parts.append(_boc(f))
+    return "\n".join(parts) + "\nJSON.stringify({ok:!!window.__otlGonG,loi:window.__otlGonErr})"
 
 
 async def main():

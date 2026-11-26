@@ -52,11 +52,27 @@ def check_allowed(ten):
                          f"(hoặc Ctrl+Shift+A). Đang cho phép: {', '.join(names) or '(chưa có cuộc nào)'}")
 
 
+PORT_WEB = 9334  # 26/11/2026: app "Thanh TCL" (Zalo Web trong WebView2) - dung khi Zalo PC chan cong go loi
+
+
+def _trang_zalo_web():
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{PORT_WEB}/json", timeout=3) as r:
+            targets = json.load(r)
+    except OSError:
+        return None
+    return next((t["webSocketDebuggerUrl"] for t in targets
+                 if t.get("type") == "page" and "chat.zalo.me" in t.get("url", "")), None)
+
+
 def _page_ws_url():
     try:
         with urllib.request.urlopen(f"http://127.0.0.1:{PORT}/json", timeout=3) as r:
             targets = json.load(r)
     except OSError:
+        web = _trang_zalo_web()
+        if web:
+            return web
         # 26/11/2026: Zalo 26.11.20 tu chan cong go loi; zalo-gon.ps1 ghi "<phien ban>=1" vao chan-go-loi.txt
         chan = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chan-go-loi.txt")
         if os.path.exists(chan):

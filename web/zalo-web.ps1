@@ -1,6 +1,6 @@
-# Zalo Web gon: mo cua so Chrome rieng chi chay Zalo Web (chat.zalo.me) kem cong go loi 9334 (chi 127.0.0.1),
-# ho so rieng (khong dung chung Chrome chinh), roi nhoi cac module web/modules/*.js (icon Zalo + ten "Thanh TCL",
-# nen carbon, cac tinh nang). Khong dung Zalo PC, khong sua file nao cua Zalo.
+# Zalo Web gon: mo app thanh-tcl.exe (Zalo Web trong WebView2, cong go loi 9334 chi 127.0.0.1) roi nhoi mod:
+# cau-hinh.json + tinh nang ban PC (../modules, tru ao PC) + web/modules (ten "Thanh TCL", ao carbon).
+# Khong dung Zalo PC, khong sua file nao cua Zalo.
 #   zalo-web.ps1            -> mo (neu chua) + nhoi mod
 #   zalo-web.ps1 -ChiMod    -> chi nhoi mod vao cua so dang mo
 #   zalo-web.ps1 -Eval "js" -> chay 1 bieu thuc JS (do giao dien)
@@ -8,30 +8,19 @@ param([switch]$ChiMod, [string]$Eval)
 $ErrorActionPreference = 'Stop'
 $port = 9334
 $dir  = Split-Path -Parent $MyInvocation.MyCommand.Path
-$prof = Join-Path $env:LOCALAPPDATA 'ZaloWebGon\profile'
-New-Item -ItemType Directory -Force $prof | Out-Null
 function Log($m){ try{ Add-Content (Join-Path $dir 'zalo-web.log') "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')  $m" -Encoding UTF8 }catch{} ; $m }
 
-$chrome = @(
-  "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
-  "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
-  "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
-) | Where-Object { Test-Path $_ } | Select-Object -First 1
-if (-not $chrome) { Log 'LOI: khong thay chrome.exe'; exit 1 }
-
 function Targets { try { Invoke-RestMethod "http://127.0.0.1:$port/json" -TimeoutSec 2 | ForEach-Object { $_ } } catch { $null } }
-function ZaloPage { Targets | Where-Object { $_.type -eq 'page' -and $_.url -match 'zalo' } | Select-Object -First 1 }
+function ZaloPage { Targets | Where-Object { $_.type -eq 'page' -and $_.url -match 'chat\.zalo\.me' } | Select-Object -First 1 }
 
-# ---- Mo cua so neu chua co cong / chua co trang Zalo
-if (-not $ChiMod -and -not (ZaloPage)) {
-  $short = (New-Object -ComObject Scripting.FileSystemObject).GetFolder($prof).ShortPath
-  $a = @("--app=https://chat.zalo.me/","--user-data-dir=$short",
-         "--remote-debugging-port=$port","--remote-debugging-address=127.0.0.1",
-         '--no-first-run','--no-default-browser-check','--window-size=1280,860')
-  Start-Process $chrome -ArgumentList $a
+# ---- Tu 26/11/2026 Zalo Web chay trong app thanh-tcl.exe (WebView2: X = an xuong khay), khong con cua so Chrome.
+# Mo lan 2 khi app dang chay = app tu hien cua so.
+if (-not $ChiMod) {
+  $app = Join-Path $dir 'thanh-tcl.exe'
+  if (-not (Test-Path $app)) { Log 'LOI: thieu thanh-tcl.exe'; exit 1 }
+  Start-Process $app -WorkingDirectory $dir
   for ($i=0; $i -lt 40 -and -not (ZaloPage); $i++) { Start-Sleep -Milliseconds 500 }
-  if (-not (ZaloPage)) { Log 'LOI: khong mo duoc cua so Zalo Web kem cong'; exit 1 }
-  Log 'Da mo cua so Zalo Web'
+  if (-not (ZaloPage)) { Log 'LOI: app Thanh TCL chua mo cong go loi'; exit 1 }
 }
 
 $pg = ZaloPage

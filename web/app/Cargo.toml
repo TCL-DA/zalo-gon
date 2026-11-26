@@ -1,0 +1,19 @@
+[package]
+name = "thanh-tcl"
+version = "1.0.0"
+edition = "2021"
+description = "Thanh TCL - Zalo Web trong cua so rieng (WebView2): X = an xuong khay, tu chay ngam, mod qua cong 9334"
+license = "MIT"
+
+[dependencies]
+wry = "0.57"
+tao = "0.37"
+tray-icon = "0.25"
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Security", "Win32_System_Threading", "Win32_UI_WindowsAndMessaging"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
