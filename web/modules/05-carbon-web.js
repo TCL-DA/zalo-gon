@@ -123,6 +123,10 @@
     // gio gui tin + khung trich dan: mau cung trong CSS cua Zalo
     'html[data-otl-carbon] .card-send-time__sendTime{color:#8b93a1!important}' +
     'html[data-otl-carbon] .message-quote-fragment__container{background:rgba(255,255,255,.07)!important}' +
+    // Cot danh sach tu an (10-an-danh-sach) truot ra sau cot bieu tuong: 2 khung nay PHAI dac,
+    // neu de kinh trong suot thi danh sach da an van lo chu sau cot bieu tuong.
+    'html[data-otl-carbon] [data-otl-gon-nav]>.nav__tabs{background:#0b0c0f!important}' +
+    'html[data-otl-carbon] [data-otl-gon="auto"]{background:rgba(17,18,22,.97)!important;backdrop-filter:blur(10px)}' +
     'html[data-otl-carbon] ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18)!important;border-radius:6px}' +
     'html[data-otl-carbon] ::-webkit-scrollbar-track{background:transparent!important}';
   (document.head || document.documentElement).appendChild(st);

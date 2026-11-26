@@ -32,6 +32,16 @@ GOC = os.path.dirname(BASE)  # thu muc zalo-gon (ban Zalo PC): cau-hinh.json + m
 BO_QUA_PC = {"05-ao-te.js", "06-ao-carbon.js"}
 
 
+# Lua chon cua Thanh ben Zalo PC nam trong localStorage cua Zalo PC (leveldb nen, khong doc ra duoc) -> ho so
+# moi cua app Thanh TCL lay mac dinh nay (chi dat khi CHUA co: Thanh doi bang phim tat thi giu lua chon moi).
+MAC_DINH = {"an-danh-sach": True}
+
+
+def _mac_dinh():
+    return ("(function(m){for(var k in m){if(localStorage.getItem('otl-gon-'+k)===null)"
+            "localStorage.setItem('otl-gon-'+k,JSON.stringify(m[k]));}})(" + json.dumps(MAC_DINH) + ");")
+
+
 def _boc(f):
     code = open(f, encoding="utf-8").read()
     ten = json.dumps(os.path.basename(f))
@@ -46,7 +56,7 @@ def bundle():
         json.loads(cfg)
     except (OSError, ValueError):
         cfg = "{}"
-    parts = ["window.__OTL_FAVICON=" + json.dumps(du) + ";", "window.__otlGonErr=[];window.__otlGonCfg=" + cfg + ";"]
+    parts = ["window.__OTL_FAVICON=" + json.dumps(du) + ";", "window.__otlGonErr=[];window.__otlGonCfg=" + cfg + ";", _mac_dinh()]
     # 1) tinh nang ban PC (Zalo PC = chinh web Zalo boc Electron -> DOM giong), 2) module rieng web (ao, ten)
     for f in sorted(glob.glob(os.path.join(GOC, "modules", "*.js"))):
         if os.path.basename(f) not in BO_QUA_PC:

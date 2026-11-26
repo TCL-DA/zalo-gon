@@ -25,7 +25,7 @@ const TEN: &str = "Thành TCL";
 const URL: &str = "https://chat.zalo.me/";
 const CONG_GO_LOI: u16 = 9334;
 /// Module nap ngay luc tai trang (chong nhay trang); cac module khac do nguoi canh chen.
-const MODULE_NAP_NGAY: [&str; 2] = ["00-brand.js", "05-carbon-web.js"];
+const MODULE_NAP_NGAY: [&str; 3] = ["00-brand.js", "05-carbon-web.js", "10-an-web.js"];
 
 enum Su {
     Khay(TrayIconEvent),
