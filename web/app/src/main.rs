@@ -72,10 +72,27 @@ fn co_icon(loai: SYSTEM_METRICS_INDEX) -> u32 {
     (unsafe { GetSystemMetrics(loai) }).max(16) as u32
 }
 
+// Chrome (neu co): Thanh thich PDF/link mo bang Chrome, KHONG Edge. Trinh mac dinh may nay la Edge ->
+// mo PDF cham + Ctrl+lan chuot khong zoom. Chrome mo nhanh (thuong da chay san) + Ctrl+lan zoom duoc.
+fn chrome() -> Option<PathBuf> {
+    ["ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA"]
+        .iter()
+        .filter_map(|v| std::env::var(v).ok())
+        .map(|b| PathBuf::from(b).join(r"Google\Chrome\Application\chrome.exe"))
+        .find(|p| p.exists())
+}
+
 fn mo_ngoai(url: &str) {
-    if url.starts_with("https://") || url.starts_with("http://") {
-        let _ = std::process::Command::new("rundll32.exe").args(["url.dll,FileProtocolHandler", url]).spawn();
+    if !(url.starts_with("https://") || url.starts_with("http://")) {
+        return;
     }
+    if let Some(c) = chrome() {
+        if std::process::Command::new(c).arg(url).spawn().is_ok() {
+            return;
+        }
+    }
+    // Khong co Chrome -> trinh mac dinh
+    let _ = std::process::Command::new("rundll32.exe").args(["url.dll,FileProtocolHandler", url]).spawn();
 }
 
 fn hien(cs: &Window) {
