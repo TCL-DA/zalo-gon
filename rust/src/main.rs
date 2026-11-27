@@ -65,7 +65,10 @@ fn tim_trang() -> Option<String> {
     let body = txt.split_once("\r\n\r\n")?.1;
     let ds: Value = serde_json::from_str(body).ok()?;
     ds.as_array()?.iter().find_map(|t| {
-        let la_chinh = t["type"] == "page" && t["url"].as_str().is_some_and(|u| u.contains(CFG.trang_url_chua.as_str()));
+        // Cua so xem anh/file cua Zalo Web (chat.zalo.me/popup-viewer.html) cung chua "chat.zalo.me" -> bo qua,
+        // khong thi nguoi canh bam nham vao cua so con (27/11/2026).
+        let la_chinh = t["type"] == "page"
+            && t["url"].as_str().is_some_and(|u| u.contains(CFG.trang_url_chua.as_str()) && !u.contains("popup-viewer"));
         if la_chinh { t["webSocketDebuggerUrl"].as_str().map(String::from) } else { None }
     })
 }

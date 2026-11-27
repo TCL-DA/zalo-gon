@@ -4,7 +4,7 @@
 //!   - `--an`: khoi dong an (dung cho Startup)
 //!   - ao carbon + ten/icon nap ngay tu luc tai trang (modules/*.js canh exe); cac mod con lai + cau noi do
 //!     nguoi canh (zalo-gon.exe ban web) chen qua cong go loi 9334 (chi 127.0.0.1).
-//!   - link ngoai mo bang trinh duyet mac dinh.
+//!   - link ngoai mo bang Chrome (khong co thi trinh duyet mac dinh); cua so con cua Zalo (xem anh) mo trong app.
 #![windows_subsystem = "windows"]
 
 use std::path::{Path, PathBuf};
@@ -25,7 +25,7 @@ const TEN: &str = "Thành TCL";
 const URL: &str = "https://chat.zalo.me/";
 const CONG_GO_LOI: u16 = 9334;
 /// Module nap ngay luc tai trang (chong nhay trang); cac module khac do nguoi canh chen.
-const MODULE_NAP_NGAY: [&str; 3] = ["00-brand.js", "05-carbon-web.js", "10-an-web.js"];
+const MODULE_NAP_NGAY: [&str; 4] = ["00-brand.js", "05-carbon-web.js", "10-an-web.js", "15-cua-so-80.js"];
 
 enum Su {
     Khay(TrayIconEvent),
@@ -93,6 +93,11 @@ fn mo_ngoai(url: &str) {
     }
     // Khong co Chrome -> trinh mac dinh
     let _ = std::process::Command::new("rundll32.exe").args(["url.dll,FileProtocolHandler", url]).spawn();
+}
+
+/// Cua so trong (about:blank) hoac cung trang chat.zalo.me = cua so con cua Zalo Web (xem anh, popup-viewer).
+fn cua_so_cua_zalo(url: &str) -> bool {
+    url.is_empty() || url == "about:blank" || url.starts_with(URL)
 }
 
 fn hien(cs: &Window) {
@@ -173,6 +178,11 @@ fn main() {
         ))
         .with_devtools(true)
         .with_new_window_req_handler(|url, _| {
+            // Cua so con cua chinh Zalo Web (trinh xem anh/video mo cua so TRONG roi tu ve vao) -> mo trong app,
+            // tu choi la bam anh khong xem duoc. Kich thuoc 80% man hinh do modules/15-cua-so-80.js dat.
+            if cua_so_cua_zalo(&url) {
+                return NewWindowResponse::Allow;
+            }
             mo_ngoai(&url);
             NewWindowResponse::Deny
         })

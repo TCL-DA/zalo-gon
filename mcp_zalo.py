@@ -61,8 +61,10 @@ def _trang_zalo_web():
             targets = json.load(r)
     except OSError:
         return None
+    # cua so xem anh/file (chat.zalo.me/popup-viewer.html) cung chua "chat.zalo.me" -> bo qua, chi lay trang chinh
     return next((t["webSocketDebuggerUrl"] for t in targets
-                 if t.get("type") == "page" and "chat.zalo.me" in t.get("url", "")), None)
+                 if t.get("type") == "page" and "chat.zalo.me" in t.get("url", "")
+                 and "popup-viewer" not in t.get("url", "")), None)
 
 
 def _page_ws_url():

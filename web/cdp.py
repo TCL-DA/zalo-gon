@@ -14,7 +14,8 @@ def page_ws():
     with urllib.request.urlopen(f"http://127.0.0.1:{PORT}/json", timeout=3) as r:
         tg = json.load(r)
     for t in tg:
-        if t.get("type") == "page" and "zalo" in t.get("url", ""):
+        # bo qua cua so xem anh/file (chat.zalo.me/popup-viewer.html): chi lay trang chinh
+        if t.get("type") == "page" and "zalo" in t.get("url", "") and "popup-viewer" not in t.get("url", ""):
             return t["webSocketDebuggerUrl"]
     raise SystemExit("khong thay trang Zalo Web tren cong 9334")
 
